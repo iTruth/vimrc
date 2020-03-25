@@ -1,0 +1,321 @@
+" 语言设置, 为了解决乱码问题
+set helplang=cn
+let $LANG='en'
+set langmenu=en
+source $VIMRUNTIME/delmenu.vim
+source $VIMRUNTIME/menu.vim
+
+" 语法高亮
+syntax on
+" 配色方案
+colorscheme molokai
+" 启动不显示提示 
+set shortmess=atI
+" 窗口位置
+"winpos 100 100
+" 窗口大小
+set lines=30 columns=110
+" 设置字体
+set guifont=Courier_New:h10:cANSI
+" 显示行号
+set nu
+" 显示标尺
+set ruler
+" 不显示图形按钮
+set go=
+" 突出显示当前行
+set cursorline
+" 显示输入的命令
+set showcmd
+" 设置编码格式
+set encoding=utf-8
+set fencs=utf-8,ucs-bom,shift-jis,gb18030,gbk,gb2312,cp936
+" 代码补全 
+set completeopt=preview,menu 
+" 去掉输入错误的提示声音
+set noeb
+" 在处理未保存或只读文件的时候，弹出确认
+set confirm
+"搜索逐字符高亮
+set hlsearch
+set incsearch
+" 使退格键(backspace)正常处理indent, eol, start等
+set backspace=2
+" 允许backspace和光标键跨越行边界
+set whichwrap+=<,>,h,l
+" 设置手动折叠
+set foldenable
+set foldmethod=manual
+" 去掉vi一致性模式
+set nocompatible
+" 字符间插入的像素行数目
+set linespace=0
+" 自动读取和保存
+set autoread
+set autowrite
+" 自动缩进
+set autoindent
+set cindent
+" Tab键的宽度
+set tabstop=4
+" 统一缩进为4
+set softtabstop=4
+set shiftwidth=4
+" 不要用空格代替制表符
+set noexpandtab
+" 为C程序提供自动缩进
+set smartindent
+" 在行和段开始处使用制表符
+set smarttab
+" 不生成临时文件(这样做VIM将无法撤销上次文件的修改)
+set nobackup
+set noswapfile
+" 设置匹配括号高亮时间
+set showmatch
+set matchtime=1
+" 设置魔术
+set magic
+" 共享剪贴板
+set clipboard+=unnamed
+" 允许使用鼠标
+set mouse=a
+set selection=exclusive
+set selectmode=mouse,key
+"set statusline=%F%m%r%h%w\ [FORMAT=%{&ff}]\ [TYPE=%Y]\ [POS=%l,%v][%p%%]\ %{strftime(\"%d/%m/%y\ -\ %H:%M\")}
+"set laststatus=2
+
+""""""""Alt+n快捷切换Tab"""""""""""""""""""""""""""""""
+function! TabPos_ActivateBuffer(num)
+	let s:count = a:num
+	exe "tabfirst"
+	exe "tabnext" s:count
+endfunction
+function! TabPos_Initialize()  
+	for i in range(1, 9)
+		exe "map <M-" . i . "> :call TabPos_ActivateBuffer(" . i . ")<CR>"
+	endfor
+	exe "map <M-0> :call TabPos_ActivateBuffer(10)<CR>"
+endfunction
+autocmd VimEnter * call TabPos_Initialize()
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+"新文件标题
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+"新建.c,.cpp,.java,.bat文件，自动插入文件头 
+autocmd BufNewFile *.cpp,*.[ch],*.java,*.bat exec ":call SetTitle()" 
+""定义函数SetTitle，自动插入文件头 
+func SetTitle() 
+	if &filetype == 'bat'
+		call append(0, "@echo off")
+		call append(1, "")
+	elseif &filetype == 'java'
+		call append(0, "import java.util.*;")
+		call append(1, "")
+	elseif expand('%:e') == 'cpp'
+		"set dictionary+=cpp_h.dic
+		call append(0, "#include <iostream>")
+		call append(1, "using namespace std;")
+		call append(2, "")
+	elseif expand('%:e') == 'h'
+		if filereadable(expand('%:r').'.c')
+			call append(0, "#ifndef ".toupper(expand("%:r"))."_H")
+			call append(1, "#define ".toupper(expand("%:r"))."_H")
+			call append(2, "")
+			call append(3, "#endif")
+			exec "normal 3G"
+		else
+			call append(0, "#ifndef ".toupper(expand("%:r"))."_H")
+			call append(1, "#define ".toupper(expand("%:r"))."_H")
+			call append(2, "")
+			call append(3, "class ".expand("%:r")."{")
+			call append(4, "	public:")
+			call append(5, "		".expand("%:r")."();")
+			call append(6, "		")
+			call append(7, "};")
+			call append(8, "")
+			call append(9, "#endif")
+			exec "normal 7G$"
+		endif
+	elseif &filetype == 'c'
+		call append(0, "#include <stdio.h>")
+		call append(1, "")
+	endif
+	"新建文件后，自动定位到文件末尾
+	autocmd BufNewFile * normal G
+endfunc 
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+"键盘命令
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+" 映射全选
+nnoremap <C-A> ggvG$
+"自动对齐
+nnoremap <F12> gg=G
+"窗口间切换  
+nnoremap <F2> <C-w>w 
+"去空行  
+nnoremap <C-F2> :g/^\s*$/d<CR> 
+"新建标签  
+nnoremap <M-F3> :tabnew<CR>  
+"列出当前目录文件  
+noremap <F3> :tabnew .<CR>  
+
+"切换C/C++相关联的头文件
+nnoremap <F4> :call CPPAutoSwitch()<CR>
+func CPPAutoSwitch()
+	if expand('%:e') == 'c'
+		let s:cpp_e = 'c'
+		call SwitchSourceAndHeader('c', 'h')
+	elseif expand('%:e') == 'cpp'
+		let s:cpp_e = 'cpp'
+		call SwitchSourceAndHeader('cpp', 'h')
+	elseif expand('%:e') == 'h'
+		if exists("s:cpp_e")
+			call SwitchSourceAndHeader(s:cpp_e, 'h')
+		elseif filereadable(expand('%:r').'.c')
+			call SwitchSourceAndHeader('c', 'h')
+		else
+			call SwitchSourceAndHeader('cpp', 'h')
+		endif
+	endif
+endfunc
+func SwitchSourceAndHeader(src, header)
+	if expand('%') == expand('%:r').'.'.a:src
+		let s:n = TabID(expand('%:r').'.'.a:header)
+		if(s:n == -1)
+			exec "tabe %<.".a:header
+		else
+			exec (s:n+1)."tabn"
+		endif
+	elseif expand('%') == expand('%:r').'.'.a:header
+		let s:n = TabID(expand('%:r').'.'.a:src)
+		if(s:n == -1)
+			exec "tabe %<.".a:src
+		else
+			exec (s:n+1)."tabn"
+		endif
+	endif
+endfunc
+func TabID(TabName)
+	for n in range(tabpagenr('$'))
+		if MyTabLabel(n+1) == a:TabName
+			return n
+		endif
+	endfor
+	return -1
+endfunc
+function MyTabLabel(n)
+	let buflist = tabpagebuflist(a:n)
+	let winnr = tabpagewinnr(a:n)
+	return bufname(buflist[winnr - 1])
+endfunction
+
+" 按F5编译
+nnoremap <F5> :call CompileBuildGcc()<CR>
+func! CompileBuildGcc()
+	exec "w"
+	if &filetype == 'c'
+		exec "!gcc -Wall % -o %<"
+	elseif &filetype == 'cpp'
+		exec "!g++ -Wall % -o %<"
+	elseif &filetype == 'java' 
+		exec "!javac -encoding UTF-8 %" 
+	elseif &filetype == 's'
+		exec "!gcc -o %< %<.s"
+	elseif &filetype == 'sh'
+		:!./%
+	elseif &filetype == 'asm'
+		exec "!nasm -f win32 % -o %<.o & gcc %<.o -o %<.exe"
+	endif
+endfunc
+
+" 按F6运行
+noremap <F6> :call CompileRunGcc()<CR>
+func! CompileRunGcc()
+	exec "w"
+	if &filetype == 's'
+		exec "! %<"
+	elseif &filetype == 'c'
+		exec "! %<"
+	elseif &filetype == 'cpp'
+		exec "! %<"
+	elseif &filetype == 'java' 
+		exec "!java %<"
+	elseif &filetype == 'asm' 
+		exec "! %<"
+	elseif &filetype == 'python'
+		exec "!python %"
+	elseif &filetype == 'sh'
+		! %
+	endif
+endfunc
+
+" C,C++按F8调试
+noremap <F8> :call Rungdb()<CR>
+func! Rungdb()
+	exec "w"
+	if &filetype == 'c'
+		exec "!gcc -g % -o %<.exe"
+	elseif &filetype == 'cpp'
+		exec "!g++ -g % -o %<.exe"
+	endif
+	exec "!gdb ./%<.exe"
+endfunc
+
+"自动补全
+inoremap ( ()<ESC>i
+inoremap ) <c-r>=ClosePair(')')<CR>
+inoremap <M-(> (
+inoremap <M-)> )
+
+inoremap {<CR> {<CR>}<ESC>O
+inoremap {<TAB> {}<ESC>i
+inoremap } <c-r>=ClosePair('}')<CR>
+inoremap <M-{> {
+inoremap <M-}> }
+
+inoremap [ []<ESC>i
+inoremap ] <c-r>=ClosePair(']')<CR>
+inoremap <M-[> [
+inoremap <M-]> ]
+
+inoremap " ""<ESC>i
+inoremap ' ''<ESC>i
+inoremap <M-"> "
+inoremap <M-'> '
+
+"删括号用
+inoremap <S-BACKSPACE> <DEL><BACKSPACE>
+
+function! ClosePair(char)
+	if getline('.')[col('.') - 1] == a:char
+		return "\<Right>"
+	else
+		return a:char
+	endif
+endfunction
+
+"TAB键切换Tabs
+nnoremap <TAB> :tabn<CR>
+nnoremap <S-TAB> :tabp<CR>
+
+"insert模式emacs快捷键
+inoremap <C-L> <ESC>zza
+inoremap <C-F> <ESC>la
+inoremap <C-N> <ESC>ja
+inoremap <C-P> <ESC>ka
+inoremap <C-B> <ESC>i
+inoremap <C-A> <ESC>I
+inoremap <C-E> <ESC>A
+inoremap <C-K> <ESC>C
+inoremap <M-<> <ESC>ggi
+inoremap <M->> <ESC>GA
+
+"Ctrl-I 命令定义
+inoremap <C-I>i <Esc>Simport 
+inoremap <C-I>ci <Esc>S#include 
+inoremap <C-I>csi <Esc>S#include <><Esc>i
+inoremap <C-I>cd <Esc>S#define 
+inoremap <C-I>cm <Esc>Sint main(int argc, char* argv[])<CR>{<CR>}<Esc>O
+inoremap <C-I>jm public static void main(String[] args){<CR>}<Esc>O
+inoremap <C-I>pm <Esc>Sif __name__ == '__main__':<CR><Tab>main();<Esc>kO<Esc>Odef main():<CR>
