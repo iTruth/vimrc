@@ -207,11 +207,16 @@ nnoremap <F12> gg=G
 "窗口间切换  
 nnoremap <F2> <C-w>w 
 "去空行  
-nnoremap <C-F2> :g/^\s*$/d<CR> 
+nnoremap <C-F2> :g/^\s*$/d<CR>
 "新建标签  
-nnoremap <M-F3> :tabnew<CR>  
+nnoremap <M-F3> :tabnew<CR>
 "列出当前目录文件  
-noremap <F3> :tabnew .<CR>  
+noremap <F3> :tabnew .<CR>
+
+"Alt+o/O以命令模式插入行
+noremap <M-o> o<Esc>
+noremap <M-O> O<Esc>
+
 "insert模式emacs快捷键
 inoremap <C-L> <ESC>zza
 inoremap <C-F> <ESC>la
@@ -224,14 +229,54 @@ inoremap <C-K> <ESC>C
 inoremap <M-<> <ESC>ggi
 inoremap <M->> <ESC>GA
 
-"Ctrl-I 命令定义
-inoremap <C-I>i <Esc>Simport 
-inoremap <C-I>ci <Esc>S#include 
-inoremap <C-I>csi <Esc>S#include <><Esc>i
-inoremap <C-I>cd <Esc>S#define 
-inoremap <C-I>cm <Esc>Sint main(int argc, char* argv[])<CR>{<CR>}<Esc>O
-inoremap <C-I>jm public static void main(String[] args){<CR>}<Esc>O
-inoremap <C-I>pm <Esc>Sif __name__ == '__main__':<CR><Tab>main();<Esc>kO<Esc>Odef main():<CR>
+"\ 命令定义
+nnoremap \im Simport 
+nnoremap \inc S#include 
+nnoremap \ins S#include <><Esc>i
+nnoremap \de S#define 
+
+nnoremap \main :call AddMain()<CR>o
+function! AddMain()
+	if &filetype == 'c' || &filetype == 'cpp' || &filetype == 'h'
+		exec "normal! Iint main(int argc, char* argv[])\<CR>{\<CR>}\<ESC>k"
+	elseif &filetype == 'python'
+		exec "normal! Iif __name__ == '__main__':\<CR>\<Tab>main();\<Esc>kO\<Esc>O\<Esc>Idef main():"
+	elseif &filetype == 'java'
+		exec "normal! Spublic static void main(String[] args){\<CR>}\<ESC>k"
+	endif
+endfunction
+
+nnoremap \f :call AddFunc()<CR>i
+function! AddFunc()
+	if &filetype == 'c' || &filetype == 'cpp' || &filetype == 'h'
+		exec "normal! S()\<CR>{\<CR>}\<ESC>kkI"
+	elseif &filetype == 'python'
+		exec "normal! Sdef ():\<ESC>$F("
+	elseif &filetype == 'java'
+		exec "normal! a(){\<CR>}\<ESC>k$F("
+	endif
+endfunction
+
+nnoremap \0f :call AddFrontFunc()<CR>i
+function! AddFrontFunc()
+	if &filetype == 'c' || &filetype == 'cpp' || &filetype == 'h'
+		exec "normal! I()\<CR>{\<CR>}\<ESC>kkI"
+	elseif &filetype == 'python'
+		exec "normal! Idef ():\<ESC>$F("
+	elseif &filetype == 'java'
+		exec "normal! a(){\<CR>}\<ESC>k$F("
+	endif
+endfunction
+
+"函数调用
+nnoremap \cf :call FunctionCall()<CR>F(i
+function! FunctionCall()
+	if len(getline('.')) == 0
+		exec "normal! S();"
+	else
+		exec "normal! a();"
+	endif
+endfunction
 
 "切换C/C++相关联的头文件
 nnoremap <F4> :call CPPAutoSwitch()<CR>
