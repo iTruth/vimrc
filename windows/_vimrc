@@ -230,10 +230,15 @@ inoremap <M-<> <ESC>ggi
 inoremap <M->> <ESC>GA
 
 "\ 命令定义
-nnoremap \im Simport 
-nnoremap \inc S#include 
-nnoremap \ins S#include <><Esc>i
-nnoremap \de S#define 
+nnoremap \im :call SetNewLine()<CR>Simport 
+nnoremap \inc :call SetNewLine()<CR>S#include 
+nnoremap \ins :call SetNewLine()<CR>S#include <><Esc>i
+nnoremap \de :call SetNewLine()<CR>S#define 
+function! SetNewLine()
+	if len(getline('.')) != 0
+		exec "normal! o"
+	endif
+endfunction
 
 nnoremap \main :call AddMain()<CR>o
 function! AddMain()
